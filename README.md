@@ -1,48 +1,91 @@
-# MinIO Service Documentation
+# Silo Docker Service
 
-This document provides details about the MinIO service configured in the Docker setup.
+Servicio Docker para desplegar **Silo**, un almacenamiento de objetos compatible con S3, con configuración reproducible mediante Docker Compose.
 
-## Description
+## Descripción
 
-MinIO is a high-performance, S3-compatible object storage service that is designed for large-scale data storage.
+Este repositorio contiene la configuración para levantar Silo en local o en un entorno de desarrollo. Silo expone una API compatible con S3 (puerto 9000) y una consola web de administración (puerto 9001).
 
-## Services
+## Estructura del repositorio
 
-- **MinIO**: The main service that runs the MinIO object storage.
-  - **Container Name**: s3
-  - **Image**: minio/minio:latest
-  - **Ports**: Exposed on ports (9000, 9001)
-  - **Volumes**: Data is persisted in `minio_data` volume, mapped to `/data` and configuration is stored in `minio_config` volume, mapped to `/root/.minio`
-  - **Environment Variables**: Loaded from `.env`
-  - **Command**: `server /data --console-address ":9001"`
-  - **Restart Policy**: Always restart the container
-  - **Resource Limits**: Memory limit of `512M` and CPU limit of `0.5`
+| Ruta | Descripción |
+| ---- | ----------- |
+| `docker-compose.yaml` | Stack principal: servicio `silo` con volumen persistente, healthcheck y red interna. |
+| `docker-compose.dev.yaml` | Variante de desarrollo que usa `.env.dev` en lugar de `.env`. |
+| `.env.example` | Plantilla con las variables requeridas. |
+| `test_python/` | Proyecto Python de prueba de humo contra el endpoint S3 (ver [test_python/README.md](test_python/README.md)). |
+| `LICENSE` | Licencia del proyecto. |
 
-## Installation
+## Servicio Silo
 
-1. Ensure Docker is installed on your machine.
-2. Clone the repository if you haven't already:
+- **Contenedor**: `silo`
+- **Imagen**: `docker.io/pgsty/silo` (versión fijada por fecha de release en el compose)
+- **Puertos**:
+  - `9000`: API S3
+  - `9001`: consola web
+- **Comando**: `server /data --console-address ":9001"`
+- **Datos**: persistidos en el volumen `silo-data`, montado en `/data`
+- **Variables de entorno**: cargadas desde `.env`
+- **Reinicio**: `unless-stopped`
+- **Healthcheck**: `silo healthcheck ready`, cada 30 s
+- **Red**: `internal_network` (bridge)
+
+## Requisitos
+
+- Docker y Docker Compose instalados.
+
+## Configuración
+
+1. Copia la plantilla de variables y completa los valores:
 
    ```bash
-   git clone https://github.com/yourusername/your-repo.git
+   cp .env.example .env
    ```
 
-3. Navigate to the project directory:
+2. Define en `.env`:
 
-   ```bash
-   cd your-repo
+   ```env
+   MINIO_ROOT_USER=<usuario-administrador>
+   MINIO_ROOT_PASSWORD=<contraseña-administrador>
    ```
 
-4. Start the services using Docker Compose:
+   > `.env` y `.env.*` están excluidos de Git. No subas credenciales al repositorio.
 
-   ```bash
-   docker-compose up -d
-   ```
+## Uso
 
-## Usage
+Desde la raíz del proyecto:
 
-- Access MinIO at [http://localhost:9000](http://localhost:9000) to manage your object storage.
+```bash
+docker compose up -d
+```
 
-## License
+Para el entorno de desarrollo (requiere `.env.dev`):
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+```bash
+docker compose -f docker-compose.dev.yaml up -d
+```
+
+Para detener el servicio:
+
+```bash
+docker compose down
+```
+
+Accesos:
+
+- API S3: [http://localhost:9000](http://localhost:9000)
+- Consola web: [http://localhost:9001](http://localhost:9001)
+
+## Prueba rápida
+
+El proyecto `test_python/` verifica que el endpoint S3 responda correctamente: crea el bucket `mybucket`, sube un archivo, lo lista y comprueba que la descarga coincida con el original.
+
+```bash
+cd test_python
+uv sync
+uv run test-python
+```
+
+## Licencia
+
+Este proyecto se distribuye bajo los términos del archivo [LICENSE](LICENSE).
