@@ -1,0 +1,24 @@
+# start with: docker compose up -d
+services:
+  silo:
+    image: docker.io/pgsty/silo:RELEASE.2026-10-26T00-00-00Z
+    container_name: silo
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    ports: ["9000:9000", "9001:9001"]
+    env_file:
+      - .env
+    volumes:
+      - silo-data:/data
+    networks:
+      - internal_network
+    healthcheck:
+      test: ["CMD", "silo", "healthcheck", "ready"]
+      interval: 30s
+volumes:
+  silo-data:
+    driver: local
+
+networks:
+  internal_network:
+    driver: bridge

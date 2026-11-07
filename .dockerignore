@@ -1,0 +1,14 @@
+# Ignorar archivos de configuración locales
+.env
+.env.*
+
+# Ignorar archivos de configuración de Docker
+docker-compose.yaml
+
+# Ignorar archivos de Git
+.git
+.gitignore
+
+# Ignorar archivos de documentación
+README.md
+LICENSE

@@ -1,0 +1,11 @@
+# env
+.env
+.env.dev
+
+# docker
+docker-compose.dev.yaml
+
+# minio data
+config/
+data/
+test_python/
